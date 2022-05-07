@@ -28,10 +28,16 @@ const getLastUpdatedTime = () => {
 const getScrapedTotalRecords = async () => {
   try {
     console.log("Scraping total records");
-    const browser = await puppeteer.launch({ headless: false });
+    const browser = await puppeteer.launch({
+      headless: false,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
     const page = await browser.newPage();
-    page.setUserAgent(userAgent);
-    await page.goto(config.covidDataPageUrl, { waitUntil: "networkidle0" });
+    await page.setUserAgent(userAgent);
+    await page.goto(config.covidDataPageUrl, {
+      timeout: 30000,
+      waitUntil: "networkidle0",
+    });
     await page.waitForSelector(TOTAL_RECORDS_DOM_SELECTOR);
     const records = await page.evaluate(
       (TOTAL_RECORDS_DOM_SELECTOR, CATEGORY_TAG_TO_DATA_MAP) => {
@@ -67,8 +73,9 @@ const getScrapedTotalRecords = async () => {
     browser.close();
     await db.set(DB_KEYS.TOTAL_RECORDS, records);
     console.log("Total records scraped. Records:", records.length);
-  } catch {
+  } catch (err) {
     // TODO: error handling
+    console.log(err);
     console.log("Error retriving total records");
     return;
   }
@@ -80,11 +87,14 @@ const getScrapedStateRecords = async () => {
     const categories = ["Name", ...Object.values(CATEGORIES)];
     const browser = await puppeteer.launch({
       headless: false,
-      devtools: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
     const page = await browser.newPage();
     await page.setUserAgent(userAgent);
-    await page.goto(config.covidDataPageUrl, { waitUntil: "networkidle0" });
+    await page.goto(config.covidDataPageUrl, {
+      timeout: 30000,
+      waitUntil: "networkidle0",
+    });
     await page.waitForSelector(STATE_RECORDS_TABLE_HEADER_ROW_SELCTOR);
     const { categoriesDataRowIndex, totalCols } = await page.evaluate(
       (STATE_RECORDS_TABLE_HEADER_ROW_SELCTOR, categories) => {
@@ -142,8 +152,9 @@ const getScrapedStateRecords = async () => {
     await db.set(DB_KEYS.STATE_RECORDS, records);
     console.log("State records scraped. Records:", records.length);
     return;
-  } catch {
+  } catch (err) {
     // TODO: error handling
+    console.log(err);
     console.log("Error retriving state records");
     return;
   }
