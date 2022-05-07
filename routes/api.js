@@ -65,9 +65,12 @@ const getScrapedTotalRecords = async () => {
       CATEGORY_TAG_TO_DATA_MAP
     );
     browser.close();
-    return records;
+    await db.set(DB_KEYS.TOTAL_RECORDS, records);
+    console.log("Total records scraped. Records:", records.length);
   } catch {
-    return [];
+    // TODO: error handling
+    console.log("Error retriving total records");
+    return;
   }
 };
 
@@ -136,31 +139,23 @@ const getScrapedStateRecords = async () => {
       totalCols
     );
     browser.close();
-    return records;
+    await db.set(DB_KEYS.STATE_RECORDS, records);
+    console.log("State records scraped. Records:", records.length);
+    return;
   } catch {
     // TODO: error handling
-    return [];
+    console.log("Error retriving state records");
+    return;
   }
 };
 
 (async function scrapeData() {
-  Promise.allSettled([getScrapedTotalRecords(), getScrapedStateRecords()])
-    .then(async (res) => {
-      const [{ value: totalRecords }, { value: stateRecords }] = res;
-      try {
-        console.log("total records length", totalRecords.length);
-        console.log("state records length", stateRecords.length);
-        Promise.allSettled([
-          db.set(DB_KEYS.TOTAL_RECORDS, totalRecords),
-          db.set(DB_KEYS.STATE_RECORDS, stateRecords),
-        ]).then(() => console.log("DB Updated"));
-      } catch {
-        return;
-      }
-    })
-    .finally(() => {
-      setTimeout(scrapeData, SCRAP_INTERVAL);
-    });
+  Promise.allSettled([
+    getScrapedTotalRecords(),
+    getScrapedStateRecords(),
+  ]).finally(() => {
+    setTimeout(scrapeData, SCRAP_INTERVAL);
+  });
 })();
 
 router.get("/totalRecords", async (req, res, next) => {
