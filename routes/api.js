@@ -15,8 +15,10 @@ const {
   DB_KEYS,
 } = require("../constants/app.constants");
 const db = require("quick.db");
+const UserAgent = require("user-agents");
 
 const router = Router();
+const userAgent = new UserAgent().toString();
 
 const getLastUpdatedTime = () => {
   //TODO: Sync it with scraped time from mohfw instead
@@ -28,7 +30,8 @@ const getScrapedTotalRecords = async () => {
     console.log("Scraping total records");
     const browser = await puppeteer.launch({ headless: false });
     const page = await browser.newPage();
-    await page.goto(config.covidDataPageUrl);
+    page.setUserAgent(userAgent);
+    await page.goto(config.covidDataPageUrl, { waitUntil: "networkidle0" });
     await page.waitForSelector(TOTAL_RECORDS_DOM_SELECTOR);
     const records = await page.evaluate(
       (TOTAL_RECORDS_DOM_SELECTOR, CATEGORY_TAG_TO_DATA_MAP) => {
@@ -77,7 +80,8 @@ const getScrapedStateRecords = async () => {
       devtools: true,
     });
     const page = await browser.newPage();
-    await page.goto(config.covidDataPageUrl);
+    await page.setUserAgent(userAgent);
+    await page.goto(config.covidDataPageUrl, { waitUntil: "networkidle0" });
     await page.waitForSelector(STATE_RECORDS_TABLE_HEADER_ROW_SELCTOR);
     const { categoriesDataRowIndex, totalCols } = await page.evaluate(
       (STATE_RECORDS_TABLE_HEADER_ROW_SELCTOR, categories) => {
