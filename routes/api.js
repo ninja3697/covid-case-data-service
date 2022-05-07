@@ -29,7 +29,9 @@ const getScrapedTotalRecords = async () => {
   try {
     console.log("Scraping total records");
     const browser = await puppeteer.launch({
+      /* Disabled for heroku deployment
       headless: false,
+      */
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
     const page = await browser.newPage();
@@ -86,7 +88,9 @@ const getScrapedStateRecords = async () => {
     console.log("Scraping state records");
     const categories = ["Name", ...Object.values(CATEGORIES)];
     const browser = await puppeteer.launch({
+      /*  Disabled for heroku deployment
       headless: false,
+      */
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
     const page = await browser.newPage();
