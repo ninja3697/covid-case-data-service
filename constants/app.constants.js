@@ -13,5 +13,9 @@ module.exports = {
     PRIMARY: "primary",
     DANGER: "danger",
   },
-  SCRAP_INTERVAL: 24 * 60 * 60 * 1000,
+  SCRAP_INTERVAL: 10 * 60 * 1000,
+  DB_KEYS: {
+    TOTAL_RECORDS: "totalRecords",
+    STATE_RECORDS: "stateRecords",
+  },
 };

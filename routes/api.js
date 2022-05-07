@@ -1,6 +1,5 @@
 const { Router } = require("express");
 const puppeteer = require("puppeteer");
-const fs = require("fs");
 const config = require("../config/config");
 const {
   TOTAL_RECORDS_DOM_SELECTOR,
@@ -10,7 +9,12 @@ const {
   STATE_RECORDS_TABLE_HEADER_ROW_SELCTOR,
   STATE_RECORDS_TABLE_BODY_ROW_SELCTOR,
 } = require("../constants/stateRecords.constants");
-const { CATEGORIES, SCRAP_INTERVAL } = require("../constants/app.constants");
+const {
+  CATEGORIES,
+  SCRAP_INTERVAL,
+  DB_KEYS,
+} = require("../constants/app.constants");
+const db = require("quick.db");
 
 const router = Router();
 
@@ -21,6 +25,7 @@ const getLastUpdatedTime = () => {
 
 const getScrapedTotalRecords = async () => {
   try {
+    console.log("Scraping total records");
     const browser = await puppeteer.launch({ headless: false });
     const page = await browser.newPage();
     await page.goto(config.covidDataPageUrl);
@@ -65,6 +70,7 @@ const getScrapedTotalRecords = async () => {
 
 const getScrapedStateRecords = async () => {
   try {
+    console.log("Scraping state records");
     const categories = ["Name", ...Object.values(CATEGORIES)];
     const browser = await puppeteer.launch({
       headless: false,
@@ -133,25 +139,40 @@ const getScrapedStateRecords = async () => {
   }
 };
 
-let totalRecords = [];
-let stateRecords = [];
-
 (async function scrapeData() {
-  try {
-    totalRecords = await getScrapedTotalRecords();
-    stateRecords = await getScrapedStateRecords();
-    setTimeout(scrapeData, SCRAP_INTERVAL);
-  } catch {
-    return;
-  }
+  Promise.allSettled([getScrapedTotalRecords(), getScrapedStateRecords()])
+    .then(async (res) => {
+      const [{ value: totalRecords }, { value: stateRecords }] = res;
+      try {
+        console.log("total records length", totalRecords.length);
+        console.log("state records length", stateRecords.length);
+        Promise.allSettled([
+          db.set(DB_KEYS.TOTAL_RECORDS, totalRecords),
+          db.set(DB_KEYS.STATE_RECORDS, stateRecords),
+        ]).then(() => console.log("DB Updated"));
+      } catch {
+        return;
+      }
+    })
+    .finally(() => {
+      setTimeout(scrapeData, SCRAP_INTERVAL);
+    });
 })();
 
 router.get("/totalRecords", async (req, res, next) => {
-  res.json({ records: totalRecords, lastUpdatedTime: getLastUpdatedTime() });
+  const totalRecords = await db.get(DB_KEYS.TOTAL_RECORDS);
+  res.json({
+    records: totalRecords ?? [],
+    lastUpdatedTime: getLastUpdatedTime(),
+  });
 });
 
 router.get("/stateRecords", async (req, res, next) => {
-  res.json({ records: stateRecords, lastUpdatedTime: getLastUpdatedTime() });
+  const stateRecords = await db.get(DB_KEYS.STATE_RECORDS);
+  res.json({
+    records: stateRecords ?? [],
+    lastUpdatedTime: getLastUpdatedTime(),
+  });
 });
 
 module.exports = router;
