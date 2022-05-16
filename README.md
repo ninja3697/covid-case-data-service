@@ -13,8 +13,9 @@ The data is scraped from [MoHFW](https://www.mohfw.gov.in/) site every 10 minute
 ## API Details
 
 Base endpoint: https://peaceful-mesa-18231.herokuapp.com/data-service/
+
 This module currently has 2 GET apis:
-1. getTotalRecords(): GET api to fetch overall India records.
+1. getTotalRecords(): GET api to fetch overall India records.<br />
    Endpoint: https://peaceful-mesa-18231.herokuapp.com/data-service/totalRecords
-2. getStateRecords(): GET api to fetch statewise records.
+2. getStateRecords(): GET api to fetch statewise records.<br />
    Endpoint: https://peaceful-mesa-18231.herokuapp.com/data-service/stateRecords
